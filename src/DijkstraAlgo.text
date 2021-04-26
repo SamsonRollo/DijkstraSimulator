@@ -1,0 +1,19 @@
+while(!queue.isEmpty()){
+    String cur = queue.dequeue();
+    int indexCur = indexRetriever(cur);
+    visited[indexCur] = true;
+
+    VNode neighbours = vertexSet[indexCur].getNeighbour();
+
+    while(neighbours!=null){
+        double tempDist = distance[indexCur]+neighbours.getWeight();
+        int neighcurIndex = indexRetriever(neighbours.getVertexName());
+
+        if(tempDist<distance[neighcurIndex]){
+            distance[neighcurIndex] = tempDist;
+            prev[neighcurIndex] = cur;
+            queue.enqueue(neighbours.getVertexName());
+        }
+        neighbours = neighbours.getVNode();
+    }
+}
