@@ -4,31 +4,31 @@ import java.awt.event.*;
 import java.awt.*;
 import javax.swing.*;
 import javax.swing.event.*;
+import java.io.*;
 import java.util.ArrayList;
 import java.awt.image.BufferedImage;
 import javax.imageio.ImageIO;
-import java.io.*;
-import Graph.*;
-import Algorithms.*;
+import Graph.DijkstraGraphController;
+import Graph.Vertex;
+import Graph.Edge;
 
 public class VisualPanel extends JPanel{
 	
-	private MainClass dPage;
+	private DijkstraGraphController controller;
 	private JPanel algoPanel, varPanel, executionPanel;
 	private double[] distance;
 	private ArrayList<Vertex> vertices;
 
-	public VisualPanel(MainClass dPage){
-		this.dPage = dPage;
-
+	public VisualPanel(DijkstraGraphController controller, Dimension size){
+		this.controller = controller;
 		setLayout(new BorderLayout());
-		add(loadTools(dPage.getSize()), BorderLayout.NORTH);
+		add(loadTools(size), BorderLayout.NORTH);
 
 		JPanel mainPanel = new JPanel(null);
 		add(mainPanel);
-		mainPanel.add(loadVVisual(dPage.getSize()));
-		mainPanel.add(loadVExecution(dPage.getSize()));
-		setSize((int)dPage.getSize().getWidth(), (int)dPage.getSize().getHeight());
+		mainPanel.add(loadVVisual(size));
+		mainPanel.add(loadVExecution(size));
+		setSize((int)size.getWidth(), (int)size.getHeight());
 	}
 
 	private JPanel loadVVisual(Dimension d){
@@ -51,7 +51,7 @@ public class VisualPanel extends JPanel{
 				}catch(IOException ioe){System.out.println("Unable to read DijkstraAlgo.text");};
 			}
 		};
-		algoPanel.setPreferredSize(new Dimension((int)d.getWidth()-30,(int)d.getHeight()/2-30));
+		algoPanel.setPreferredSize(new Dimension((int)d.getWidth()+70,(int)d.getHeight()/2-30));
 		distance = new double[0];
 		vertices = new ArrayList<Vertex>();
 		varPanel = new JPanel(null){
@@ -60,7 +60,7 @@ public class VisualPanel extends JPanel{
 				int minW = 48;
 				int y = 15;
 				int x = 15;
-				for(Vertex v : dPage.getGraph().getVertices()){
+				for(Vertex v : controller.getVertices()){
 					if(v.getVertexName().length()*8>minW)
 						minW = v.getVertexName().length()*8;
 				}
@@ -70,7 +70,7 @@ public class VisualPanel extends JPanel{
 				y+=24;
 
 				int i = 0;
-				for(Vertex v : dPage.getGraph().getVertices()){
+				for(Vertex v : controller.getVertices()){
 					g.drawString(v.getVertexName(),x,y);
 					String dist = "";
 					try{
@@ -93,14 +93,14 @@ public class VisualPanel extends JPanel{
 
 		jspAlgo.getViewport().addChangeListener(new ChangeListener(){
 			public void stateChanged(ChangeEvent e){
-				algoPanel.repaint(); //try removing this 
+				//algoPanel.repaint(); //try removing this 
 				repaint();
 			}
 		});
 
 		jspVar.getViewport().addChangeListener(new ChangeListener(){
 			public void stateChanged(ChangeEvent e){
-				varPanel.repaint(); //try removing this 
+				//varPanel.repaint(); //try removing this 
 				repaint();
 			}
 		});
@@ -129,7 +129,7 @@ public class VisualPanel extends JPanel{
 			public void paintComponent(Graphics g){
 				super.paintComponent(g);
 				int farthestX = 300, farthestY = 347;
-				for(Edge e: dPage.getGraph().getEdges()){
+				for(Edge e: controller.getEdges()){
 					if(e.getActivity().equals("active"))
 						g.setColor(Color.red);
 					else if(e.getActivity().equals("done"))
@@ -140,26 +140,21 @@ public class VisualPanel extends JPanel{
 					//make an arrow if directed
 					if(e.getv1().equals(e.getv2())){
 						g.drawArc(e.getStartX()-10, e.getStartY()-25, 20,30, 0, 180);
-
-						if(dPage.getGraph().isWeighted())
-							g.drawString(String.valueOf((int)e.getWeight()), e.getStartX()-10, e.getStartY()-27);
+						g.drawString(String.valueOf((int)e.getWeight()), e.getStartX()-10, e.getStartY()-27);
 					}
 					else{
 						g.drawLine(e.getStartX(), e.getStartY(), e.getEndX(), e.getEndY());
-						if(dPage.getGraph().isDirected()){
+						if(controller.isDirected()){
 								g.fillPolygon(new int[] {(int)e.getArrow().get(0).getX(), (int)e.getArrow().get(1).getX(), (int)e.getArrow().get(2).getX()},
 												new int[] {(int)e.getArrow().get(0).getY(), (int)e.getArrow().get(1).getY(), (int)e.getArrow().get(2).getY()},3);
 							}
-					
-						if(dPage.getGraph().isWeighted())
-							g.drawString(String.valueOf((int)e.getWeight()), Math.abs((e.getStartX()+e.getEndX())/2), Math.abs((e.getStartY()+e.getEndY())/2));
+						g.drawString(String.valueOf((int)e.getWeight()), Math.abs((e.getStartX()+e.getEndX())/2), Math.abs((e.getStartY()+e.getEndY())/2));
 					}
 				}
 				//normal vertex
-				boolean usedIMG = true;
 				BufferedImage img = null;
 
-				for(Vertex v: dPage.getGraph().getVertices()){
+				for(Vertex v: controller.getVertices()){
 					if(v.getEndX()>farthestX)
 						farthestX = v.getEndX();
 					if(v.getEndY()>farthestY)
@@ -172,12 +167,9 @@ public class VisualPanel extends JPanel{
 							img = ImageIO.read(this.getClass().getClassLoader().getResource("src/vertexEvalDone.png"));
 						else
 							img = ImageIO.read(this.getClass().getClassLoader().getResource("src/vertex.png"));//source of nrmal vertex
-					}catch(IOException ioe){
-						usedIMG = false;
-						System.out.println("Unable to load some images");
-					};
+					}catch(IOException ioe){System.out.println("Unable to load some images");};
 
-					if(usedIMG)
+					if(img!=null)
 						g.drawImage(img,v.getStartX()-15, v.getStartY()-15, null);
 					else{
 						g.setColor(Color.magenta);
@@ -205,15 +197,15 @@ public class VisualPanel extends JPanel{
 		return jspExec;
 	}
 
-	private JPanel loadTools(Dimension frameSize){ //left flowlayout. try limiting the size of the loaddtootls
+	private JPanel loadTools(Dimension frameSize){ 
 		JPanel drawTools = new JPanel();
 		JPanel drawTools2 = new JPanel();
 		JSlider speed = new JSlider(0,2000,500);
 		ButtonGroup bg = new ButtonGroup();
-		//change this later to icons
-		allV = new JRadioButton("All");
+
+		allV = new JRadioButton("S-S S-P");
 		allV.setActionCommand("A");
-		eToE = new JRadioButton("End to End");
+		eToE = new JRadioButton("S-P S-P");
 		eToE.setActionCommand("E");
 		startField = new JTextField(5);
 		endField = new JTextField("Disabled", 5);
@@ -229,28 +221,24 @@ public class VisualPanel extends JPanel{
 		 	public void actionPerformed(ActionEvent e){
 		 		String start = startField.getText();
 		 		String end = endField.getText();
-
-		 		if(dPage.getGraph().numberOfVertices()>0 && !start.equals("") 
+		 		
+		 		if(controller.numberOfVertices()>0 && !start.equals("") 
 		 			&& ((eToE.isSelected() && !end.equals("")) || allV.isSelected())){
 			 		startB.setEnabled(false);
 			 		stop.setEnabled(true);
 					resetB.setEnabled(true);
-			 		Dijkstra dijkstra = new Dijkstra(getVisualPanel(),dPage.getGraph(), start, end, bg.getSelection().getActionCommand());
-			 		disableBottom();
-			 		dijkstraSearch = new Thread(dijkstra);
-			 		dijkstraSearch.start();
+					controller.runDijkstra(getVisualPanel(), start, end, bg.getSelection().getActionCommand());
 		 		}
 		 	}
 		});
 		stop.addActionListener(new ActionListener(){ //force stop esecution
 			public void actionPerformed(ActionEvent e){
-				doneExec();	
-				stopExecution();
+				controller.stopExec();
 			}
 		});
 		resetB.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e){
-				reset();
+				controller.resetExec();
 			}
 		});
 		speed.addChangeListener(new ChangeListener(){
@@ -311,16 +299,16 @@ public class VisualPanel extends JPanel{
 	@SuppressWarnings("deprecation")
 	public void stopExecution(){
 		try{
-			dijkstraSearch.stop();
+			controller.getDijkstra().stop();
 		}catch(Exception e){};
-		dPage.getGraph().resetActivity();
+		controller.resetActivity();
 	}
 
 	public void reset(){
 		stopExecution();
 		beforeExec();
 		refresh();
-		updateVariables(dPage.getGraph().getVertices(), new double[0]);
+		updateVariables(controller.getVertices(), new double[0]);
 		enableBottom();
 		startField.setText("");
 		endField.setText("Disabled");
@@ -339,7 +327,7 @@ public class VisualPanel extends JPanel{
 		try{
 			algoPanel.repaint();
 		}catch(Exception e){};
-		updateVariables(dPage.getGraph().getVertices(), distance);
+		updateVariables(controller.getVertices(), distance);
 	}
 
 	public void updateVariables(ArrayList<Vertex> vertices, double[] distance){
@@ -394,7 +382,6 @@ public class VisualPanel extends JPanel{
 
 	private GridLayout gl;
 	private int sleepTime = 500;
-	private Thread dijkstraSearch;
 	private JButton startB, stop, resetB;
 	private String currentAlgo= null;
 	private JTextField startField, endField;

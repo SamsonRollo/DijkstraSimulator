@@ -131,6 +131,13 @@ public class Edge implements Comparable<Edge>{
 		}catch(ArithmeticException ae){};
 	}
 
+	public void updateOrientation(boolean isDir){
+		if(this.isDir!=isDir){
+			this.isDir = isDir;
+			updateLine();
+		}
+	}
+
 	public void setWeight(double weight){
 		this.weight = weight;
 	}

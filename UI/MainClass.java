@@ -5,12 +5,12 @@ import java.awt.*;
 import javax.swing.*;
 import javax.swing.event.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
-import Graph.*;
+import Graph.DijkstraGraphController;
 
 public class MainClass extends JFrame implements ActionListener, MenuListener{
 
 	private JPanel activePanel;
-	private DijkstraGraphController graph;
+	private DijkstraGraphController controller;
 	private DrawPanel dPanel;
 	private VisualPanel vPanel;
 	private AboutPanel aPanel;
@@ -23,13 +23,13 @@ public class MainClass extends JFrame implements ActionListener, MenuListener{
 		setMinimumSize(new Dimension(500, 500));
 		getContentPane().setLayout(null);
 		setJMenuBar(loadMenu()); //create a jmenubar
-		loadScreen("U","U");
+		loadScreen();
 	}
 
-	private void loadScreen(String direct, String weight){
-		graph = new DijkstraGraphController(direct, weight);
-		dPanel = new DrawPanel(this);
-		vPanel = new VisualPanel(this);
+	private void loadScreen(){
+		controller = new DijkstraGraphController(this);
+		dPanel = new DrawPanel(controller, new Dimension(this.getWidth(), this.getHeight()));
+		vPanel = new VisualPanel(controller, new Dimension(this.getWidth(), this.getHeight()));
 		aPanel = new AboutPanel();
 		card = new CardLayout();
 		activePanel = new JPanel(card);
@@ -56,10 +56,14 @@ public class MainClass extends JFrame implements ActionListener, MenuListener{
 		JMenuItem loadFile = new JMenuItem("Load File");
 		JMenuItem saveFile = new JMenuItem("Save File");
 		JMenuItem exit = new JMenuItem("Exit");
+		JMenuItem generate = new JMenuItem("Generate random graph");
+		transform = new JMenuItem("Transform to digraph");
 
 		fileMenu.add(newFile);
 		fileMenu.add(loadFile);
 		fileMenu.add(saveFile);
+		fileMenu.add(transform);
+		fileMenu.add(generate);
 		fileMenu.add(exit);
 		menu.add(fileMenu);
 		menu.add(drawMenu);
@@ -69,6 +73,8 @@ public class MainClass extends JFrame implements ActionListener, MenuListener{
 		newFile.addActionListener(this);
 		loadFile.addActionListener(this);
 		saveFile.addActionListener(this);
+		transform.addActionListener(this);
+		generate.addActionListener(this);
 		exit.addActionListener(this);
 		drawMenu.addMenuListener(this);
 		runMenu.addMenuListener(this);
@@ -79,78 +85,63 @@ public class MainClass extends JFrame implements ActionListener, MenuListener{
 
 	@Override
 	public void actionPerformed(ActionEvent e){
+		String action = e.getActionCommand();
 		JFileChooser jf = new JFileChooser();
-		jf.setAcceptAllFileFilterUsed(false);
-		FileNameExtensionFilter fnef = new FileNameExtensionFilter("DijkstraGraph Files", "dijg");
-		jf.addChoosableFileFilter(fnef);
 	
-		if(e.getActionCommand()=="Save File"){
-			if(jf.showSaveDialog(null)==JFileChooser.APPROVE_OPTION){
-					graph.saveGraph(jf.getSelectedFile()+".dijg");
-				}
-		}
-		else if(e.getActionCommand()=="Load File"){
-			if(jf.showOpenDialog(null)==JFileChooser.APPROVE_OPTION){
-				graph.readGraph(jf.getSelectedFile());				
-				vPanel.reset();
-				vPanel.loadVertices(graph.getVertices());
-				activePanel.repaint();
-			}
-		}
-		else if(e.getActionCommand()=="New"){ //transfer later 
-			JPanel newGraph = new JPanel(new GridLayout(4,2,2,2));
-			JRadioButton unDirected = new JRadioButton("Undirected");
-			unDirected.setActionCommand("U");
-			unDirected.setSelected(true);
-			JRadioButton directed = new JRadioButton("Directed");
-			directed.setActionCommand("D");
-			JRadioButton unWeighted = new JRadioButton("Unweighted");
-			unWeighted.setActionCommand("U");
-			unWeighted.setSelected(true);
-			JRadioButton weighted = new JRadioButton("Weighted");
-			weighted.setActionCommand("W");
-			ButtonGroup weight = new ButtonGroup();
-			weight.add(unWeighted);
-			weight.add(weighted);
-			ButtonGroup direct = new ButtonGroup();
-			direct.add(unDirected);
-			direct.add(directed);
-
-			newGraph.add(new JLabel("Movement"));
-			newGraph.add(new JLabel(""));
-			newGraph.add(unDirected);
-			newGraph.add(directed);
-			newGraph.add(new JLabel("Weight"));
-			newGraph.add(new JLabel());
-			newGraph.add(unWeighted);
-			newGraph.add(weighted);
-
-			int i = JOptionPane.showConfirmDialog(null, newGraph, "New Dijkstra Graph",
+		if(action.equals("Save File")){
+			if(jf.showSaveDialog(null)==JFileChooser.APPROVE_OPTION)
+				controller.saveGraph(jf.getSelectedFile()+".txt");
+		}else if(action.equals("Load File")){
+			if(jf.showOpenDialog(null)==JFileChooser.APPROVE_OPTION)
+				controller.loadGraph(jf.getSelectedFile());
+		}else if(action.equals("Transform to digraph")){
+			transform("Transform to ugraph", true);
+		}else if(action.equals("Transform to ugraph")){
+			transform("Transform to digraph", false);
+		}else if(action.equals("New")){ //transfer later 
+			int i = JOptionPane.showConfirmDialog(null, "Create new graph?", "New Dijkstra Graph",
 				 		JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 
 			if(i==0){
-				graph = new DijkstraGraphController(direct.getSelection().getActionCommand(), weight.getSelection().getActionCommand());
-				vPanel.reset();
-				dPanel = new DrawPanel(this);
-				vPanel = new VisualPanel(this);
+				resetSetting("Transform to digraph");	
+				controller = new DijkstraGraphController(this);			
+				refreshVisual();
+				dPanel = new DrawPanel(controller, new Dimension(this.getWidth(), this.getHeight()));
+				vPanel = new VisualPanel(controller, new Dimension(this.getWidth(), this.getHeight()));
 			}
 		}
-		else if(e.getActionCommand()=="Exit"){
+		else if(action.equals("Exit")){
 			System.exit(0);
+		}else if(action.equals("Generate random graph")){
+			JPanel generation = new JPanel(new GridLayout(2,2));
+			JTextField vSize = new JTextField("max 50");
+			JTextField eSize = new JTextField();
+
+			generation.add(new JLabel("Vertex count: "));
+			generation.add(vSize);
+			generation.add(new JLabel("Edge count: "));
+			generation.add(eSize);
+
+			int i = JOptionPane.showConfirmDialog(null, generation, "Random Graph",
+				 		JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+
+			if(i==0){
+				controller.generateGraph(vSize.getText(), eSize.getText());
+			}
 		}
 	}
 
 	public void menuSelected(MenuEvent e){
 		if(e.getSource()==runMenu){
-			vPanel.loadVertices(graph.getVertices());
+			controller.reloadVertices();
 			card.show(activePanel, "vPanel");
 		}
 		else if(e.getSource()==drawMenu){
-			vPanel.reset();
+			refreshVisual();
 		 	card.show(activePanel, "dPanel");
 		}
 		else if(e.getSource()==aboutMenu){
-			vPanel.reset();
+			refreshVisual();
 			card.show(activePanel, "aPanel");
 		}
 	}
@@ -159,8 +150,46 @@ public class MainClass extends JFrame implements ActionListener, MenuListener{
 
 	public void menuCanceled(MenuEvent e){}
 
-	public DijkstraGraphController getGraph(){
-		return graph;
+	public DijkstraGraphController getcontroller(){
+		return controller;
+	}
+
+	public void refreshDraw(){
+		dPanel.refresh();
+	}
+
+	public void refreshVisual(){
+		vPanel.reset();
+	}
+
+	public void reloadVertices(java.util.ArrayList<Graph.Vertex> vertices){
+		vPanel.loadVertices(vertices);
+	}
+
+	public void resetSetting(String text){
+		transform.setText(text);
+	}
+
+	public void updateController(DijkstraGraphController controller){
+		this.controller = controller;
+	}
+
+	public void transform(String text, boolean direct){
+		resetSetting(text);
+		controller.setDirected(direct);
+		refreshDraw();
+	}
+
+	public void repaintActive(){
+		activePanel.repaint();
+	}
+
+	public DrawPanel getDrawPanel(){
+		return dPanel;
+	}
+
+	public VisualPanel getVisualPanel(){
+		return vPanel;
 	}
 	
 	public static void main(String[] args){
@@ -172,5 +201,6 @@ public class MainClass extends JFrame implements ActionListener, MenuListener{
 	}
 
 	private JMenu aboutMenu, runMenu, drawMenu;
+	private JMenuItem transform;
 	private CardLayout card;
 }

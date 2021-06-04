@@ -1,102 +1,102 @@
-//80 chars max per line
+//86 chars max per line
 Developer: Samson D. Rollo Jr.
 
-This app is a Dijkstra algorithm visualizer which
-show the user how Dijkstra works on graph problem.
-Especially in finding the shortest path from one 
-point (source) to another (destination). This app
-has two modes, the Source to All search, and the 
-End to End search. The app also supports weighted
-and directed, weighted and undirected, unweighted
-and directed, and unweighted and undirected. The
-default choice is unweighted and undericted.
+This app is a Dijkstra algorithm visualizer which show the user how Dijkstra
+works on graph problem. Especially in finding the shortest path from one point
+(source) to another (destination). This app has two modes, the S-S S-P and the
+S-P S-P. S-S S-P stands for Single-Source Shortest-Path problem and S-P S-P 
+stands for Single-Pair Shortest-Path problem. An elaboration can be found at 
+the end of the page. This app supports weighted and directed, weighted and 
+undirected, unweighted and directed, and unweighted and undirected. The default
+choice is unweighted and undericted.
 
 How to Use:
 
 A. Draw Menu 
-	Simply create a graph on the Draw Menu or import
-	any existing .dijg file. Errors might occur when
-	importing a file if it's not properly formatted.
+    Simply create a graph on the Draw Menu or import any existing graph file.
+    Errors might occur when importing a file if it's not properly formatted.
 
-	I. The Select tool let you rename a vertex or 
-	change a weight for weighted graphs.
-	II. The Move tool let you move a vertex from a
-	position to another.
-	III. The Vertex tool let you create a new Vertex,
-	be mindful that if you did not choose any vertex
-	name, it will automatically name itself.
-	IV. The Edge tool let you connect two vertices. 
-	In a directed graph, the first vertex you clicked
-	will be the tail and the second vertex you will
-	select will be the head. If you want to reset the
-	tail Vertex, click on the blank space.
-	V. The Delete tool let you delete a vertex or an
-	edge. SImply click on any of these elements. Be 
-	mindfull that you need atmost 3 pixels from an 
-	edge to delete it.
+    I. The Select tool (pointing arrow icon) lets you rename a vertex or 
+     change a weight for weighted graphs by double clicking on it.
+
+    II. The Move tool (hand icon) lets you move a vertex from a position to 
+     another. Click on a vertex to pick it up and click again to put it down. 
+     Note that you should not overlap vertices not go beyond negative boundaries.
+	
+    III. The Vertex tool (V icon) lets you create a new Vertex, be mindful that 
+     if you did not choose any vertex name, it will automatically name itself. 
+     Click on a valid area on the drawing canvas to create a vertex.
+	
+    IV. The Edge tool (E icon) lets you connect two vertices. In a directed graph,
+     the first vertex you clicked will be the tail and the second vertex you will 
+     select will be the head. If you want to reset the tail Vertex, click on the 
+     blank space.
+	
+    V. The Delete tool (X icon) lets you delete a vertex or an edge. Simply click
+     on any of these elements. Be mindfull that you need atmost 3 pixels from an
+     edge to delete it.
 
 B. Run Menu
-	Running the dijkstra needs an extra push before
-	it start.
+    Running the dijkstra needs an extra push before it start.
 
-	I. The Start button starts the execution of the
-	algorithm. Also starts the visualization.
-	II. The Stop button stops the execution.
-	III. The Reset button, resets the setup.
-	IV. The Speed slider let you control the speed
-	of the execution.
-	V. The All radio button is a Source to all search.
-	Refer below.
-	VI. The End to End radio button is an End to End
-	search. Refer below.
-	VII. Input your Source vertex name to the Input
-	Start textfield. The Execution will not start 
-	unless it is empty.
-	VIII. The End textfield will only be enabled if
-	yu chose End to End search.
-	IX. The Dijkstra Algorithm is visible in the 
-	upper left corner of the application. This shows
-	the current step it is taking.
-	X. The Variables can be seen at the lower left 
-	of the application. The variables gets updated
-	everytime an update happens. 
-	XI. The Visual Page, is where the visualization 
-	of the Dijkstra Algorithm being used in a graph
-	problem. Green vertex implies that the algorithm
-	is currently evaluating that vertex, A red one
-	implies that its done, blue is untouched. The 
-	color of the edge also vary. Black for untouched,
-	red for currently evaluated, and blue is done.
-	When you chose the End to End Search, a resulting
-	graph will e shown with a highlighted elements. 
-	Green vertices imply the end vertices, red implies
-	the intermediate vertices, red edge is the path;
+    I. The Start button starts the execution of the algorithm. Also starts the 
+     visualization.
+	
+    II. The Stop button stops the execution.
+	
+    III. The Reset button, resets the setup.
+	
+    IV. The Speed slider let you control the speed of the execution.
+	
+    V. The S-S S-P radio button is a Single-Source Shortest-Path mode.
+     Refer below.
+	
+    VI. The S-P S-P radio button is a Single-Pair Shortest-Path mode. 
+     Refer below.
+	
+    VII. Input your Source vertex name to the Start textfield. The Execution will
+     not start unless it is filled with a valid vertex.
+	
+    VIII. The End textfield will only be enabled if you chose S-P S-P mode.
+	
+    IX. The Dijkstra Algorithm is visible in the upper left corner of the 
+     application. This shows the current step it is taking.
+	
+    X. The Variables can be seen at the lower left of the application. The variables
+     gets updated everytime an update happens. 
+	
+    XI. The Visual Page, is where the visualization of the Dijkstra Algorithm as
+     being used in a graph problem. Green vertex implies that the algorithm is 
+     currently evaluating that vertex, A red one implies that its done, blue is 
+     untouched. The color of the edge also vary. Black for untouched, red for 
+     currently evaluated, and blue is done. When you chose the S-P S-P mode, a
+     resulting graph will e shown with a highlighted elements. Green vertices imply
+     the pair vertices, red implies the intermediate vertices, red edge is the path.
 
 C. File Menu
-	File process.
+    File process.
 
-	I. New menu let you create a new graph with a
-	specified attributes.
-	II. Load menu let you import a .dijg file.
-	III. Save menu lets you save the graph you are
-	working on.
-	IV. Generate Graph menu let you generate a random
-	graph.
-	V. Exit. Exit the application. 
+    I. New menu lets you create a new graph.
+	
+    II. Load menu let you import a graph file.
+	
+    III. Save menu lets you save the graph you are working on.
+	
+    IV. Transform to digraph/ugraph lets you transform the graph into a digraph or
+     ugraph.
+
+    V. Generate Graph menu let you generate a random graph.
+	
+    VI. Exit. Exit the application. 
 
 
 More Info: 
 
-Source to All search, searches the shortest path 
-and calculates its distance from a source node 
-to all other vertices. This will result to a    
-table that summarizes the search.
+    S-S S-P or Single-Source Shortest-Path searches for a shortest path from a source
+to all other vertices.This will result to a table that summarizes the search. An
+infinity distance means that a vertex is unreachable from the source vertex.
 
-End to End search, search the shortest path from
-the source node to a particular destination node.
-This will result to a table that summarizes the 
-search and a graphical representation on the path
+    S-P S-P or the Single-Pair Shortest-Path searches the graph for the shortest path
+from a source vertex to a destination vertex. This will result to a table that 
+summarizes the search and a graphical representation on the path
 with the shortest distance.
-
-
-In compliance to CMSC 123.

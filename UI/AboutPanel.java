@@ -2,6 +2,7 @@ package UI;
 
 import javax.swing.*;
 import java.awt.event.*;
+import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Dimension;
 import java.awt.BorderLayout;
@@ -20,18 +21,19 @@ public class AboutPanel extends JPanel{
 			@Override
 			public void paintComponent(Graphics g){
 				int x = 20, y = 20;
+				g.setFont(new Font("TimesRoman", Font.PLAIN, 15));
 				try{
 					BufferedReader br = new BufferedReader(new InputStreamReader(this.getClass().getClassLoader().getResourceAsStream("src/about.txt")));
 					String line;
 					while((line=br.readLine())!=null){
 						if(line.startsWith("//"))
 							continue;
-						g.drawString(line, x, y+=15);
+						g.drawString(line, x, y+=18);
 					}
 					br.close();
 				}catch(Exception e){System.out.println("Cannot read about file");};
 
-				panel.setPreferredSize(new Dimension(x+600, y+40));
+				panel.setPreferredSize(new Dimension(x+680, y+40));
 				updateUI();
 			}
 		};

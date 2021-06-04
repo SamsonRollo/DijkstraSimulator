@@ -1,29 +1,26 @@
 package Algorithms;
 
 import Exceptions.*;
-//import Graphs.*;
-import java.util.PriorityQueue;
 import java.util.Arrays;
 import java.util.ArrayList;
 import java.lang.StringBuilder;
 import Graph.*;
-import UI.*;
+import UI.VisualPanel;
 
 public class Dijkstra implements Runnable{
 	
-	private DijkstraGraphController g;
-	private Vertex[] vertexSet;
+	private DijkstraGraphController controller;
+	private ArrayList<Vertex> vertexSet;
 	private VisualPanel vPanel; 
 	private String track, start, end;
-	private boolean[] visited;
 	private double[] distance;
 	private boolean all = false;
 
 	public Dijkstra(){}
 
-	public Dijkstra(VisualPanel vPanel, DijkstraGraphController g, String start, String end, String choice){
+	public Dijkstra(VisualPanel vPanel, DijkstraGraphController controller, String start, String end, String choice){
 		this.vPanel = vPanel;
-		this.g = g;
+		this.controller = controller;
 		this.start = start;
 		this.end = end;
 		if(choice.equals("A"))//visit all vertices
@@ -35,16 +32,17 @@ public class Dijkstra implements Runnable{
 	public void run(){
 		try{
 			try{
-				findPath(this.g, this.start, this.end);
+				findPath(this.controller, this.start, this.end);
 			}catch(InvalidVertexException ive){new ErrorReport(ive.getMessage(), "Invalid Vertex");};
 		}catch(NegativeEdgeException nee){new ErrorReport(nee.getMessage(), "Negative Edge");};
 		vPanel.doneExec();
 	}
 
-	public void findPath(DijkstraGraphController g, String start, String end) throws NegativeEdgeException, InvalidVertexException{
-		this.vertexSet = g.getVertexSet();
+	public void findPath(DijkstraGraphController controller, String start, String end) throws NegativeEdgeException, InvalidVertexException{
+		this.vertexSet = controller.getVertices();
+		int length = vertexSet.size();
+		String check = hasNegativeEdge(controller.getEdges());
 
-		String check = hasNegativeEdge(g.getEdges());
 		if(check!=null)// maybe an input or empty set
 			throw new NegativeEdgeException(check);
 		if(indexRetriever(start)==-1)
@@ -52,22 +50,28 @@ public class Dijkstra implements Runnable{
 		if((!all && indexRetriever(end)==-1))
 			throw new InvalidVertexException(start,1);
 
-		visited = new boolean[vertexSet.length];
-		distance = new double[vertexSet.length];
-		String[] prev = new String[vertexSet.length];
-		Queue<String> queue = new Queue<>();
-		int reservedInDegree = 0;
-		if(!all)
-			reservedInDegree = vertexSet[indexRetriever(end)].getInDegree();
+		distance = new double[length];
 
-		for(int i = 0; i<vertexSet.length; i++)
+		String[] prev = new String[length];
+		VertexMinQueue<String> queue = new VertexMinQueue<String>(controller, distance);
+		int reservedInDegree = 0;
+		
+		if(!all)
+			reservedInDegree = vertexSet.get(indexRetriever(end)).getInDegree();
+
+		for(int i = 0; i<length; i++)
 			distance[i] = Double.POSITIVE_INFINITY;
+
+		bothSleep("Initialize"); //sleep
+		algoSleep("Create an"); //sleep
+		
 		distance[indexRetriever(start)] = 0;
 		queue.enqueue(start);
+		algoSleep("Insert source");
 
-		findPath(visited,distance, prev, queue, end);
+		findPath(distance, prev, queue, end);
 		if(!all)
-			vertexSet[indexRetriever(end)].setInDegree(reservedInDegree);
+			vertexSet.get(indexRetriever(end)).setInDegree(reservedInDegree);
 		
 		String[] tracks = print(distance, prev, start);
 		String[][] outputs;
@@ -76,14 +80,14 @@ public class Dijkstra implements Runnable{
 			outputs = new String[1][3];
 			generatePath(tracks);
 			int idx = indexRetriever(end);
-			outputs[0][0] = vertexSet[idx].getVertexName();
+			outputs[0][0] = vertexSet.get(idx).getVertexName();
 			outputs[0][1] = String.valueOf(distance[idx]);
 			outputs[0][2] = tracks[idx]; 
 		}
 		else{
-			outputs = new String[vertexSet.length][3];
-			for(int i=0; i<vertexSet.length; i++){
-				outputs[i][0] = vertexSet[i].getVertexName();
+			outputs = new String[length][3];
+			for(int i=0; i<length; i++){
+				outputs[i][0] = vertexSet.get(i).getVertexName();
 				outputs[i][1] = String.valueOf(distance[i]);
 				outputs[i][2] = tracks[i]; 
 			}
@@ -91,98 +95,79 @@ public class Dijkstra implements Runnable{
 		vPanel.reportResult(outputs, start);
 	}
 
-	private void findPath(boolean[] visited, double[] distance, String[] prev, Queue<String> queue, String destination){
+	private void findPath(double[] distance, String[] prev, VertexMinQueue<String> queue, String destination){
 		int destIndex = indexRetriever(destination);
 
 		while(!queue.isEmpty()){
-			algoSleep("while(!queue.");
+			algoSleep("While Q");
 			String cur = queue.dequeue();
-			g.getVertices().get(g.indexRetriever(cur)).setActivity("active");
-			bothSleep("String cur ="); // current vertex evaluated
-
 			int indexCur = indexRetriever(cur);
-			algoSleep("int indexCur =");
-			visited[indexCur] = true;
-			algoSleep("visited[indexCur] = true;");
-
-			VNode neighbours = vertexSet[indexCur].getNeighbour();
-			algoSleep("VNode neighbours =");
+			VNode neighbours = vertexSet.get(indexCur).getNeighbour();
+			controller.getVertices().get(indexCur).setActivity("active");
+			bothSleep("Retrieve vertex;");
 
 			while(neighbours!=null){
-				algoSleep("while(neighbours!");
+				algoSleep("Visit every");
 				double tempDist = distance[indexCur]+neighbours.getWeight();
-				algoSleep("double tempDist =");
 				int neighcurIndex = indexRetriever(neighbours.getVertexName());
-				
-				int i = 0;
-				int j = 0;
+				int i = controller.edgeIndex(cur+","+neighbours.getVertexName());
 
-				if(g.isDirected()){
-					i = g.edgeIndex(cur+","+neighbours.getVertexName());
+				if(!controller.isDirected() || (controller.isDirected() && i!=-1)){
+					if(i==-1)
+						i = controller.edgeIndex(neighbours.getVertexName()+","+cur);
 					if(i!=-1)
-						g.getEdges().get(i).setActivity("active");
-				}
-				else{
-					i = g.edgeIndex(cur+","+neighbours.getVertexName());
-					j = g.edgeIndex(neighbours.getVertexName()+","+cur);
-					if(i!=-1 && j!=-1){	
-						g.getEdges().get(j).setActivity("active"); 
-						g.getEdges().get(i).setActivity("active");
+						controller.getEdges().get(i).setActivity("active");
+					bothSleep("Visit every"); //current edge evaluated
+
+					if(!all && neighbours.getVertexName().equals(destination))
+						vertexSet.get(destIndex).removeInDegree();
+
+					if(tempDist<distance[neighcurIndex]){
+						algoSleep("if distance of v");
+						distance[neighcurIndex] = tempDist;
+						prev[neighcurIndex] = cur;
+						algoSleep("Update distance");
+						queue.enqueue(neighbours.getVertexName());
+						algoSleep("Add vertex");
 					}
+					if(i!=-1)
+						controller.getEdges().get(i).setActivity("done");
+					visualSleep();//vertex evaluation done
 				}
-				bothSleep("int neighcurIndex ="); //current edge evaluated
-
-				if(!all && neighbours.getVertexName().equals(destination))
-					vertexSet[destIndex].removeInDegree();
-
-				if(tempDist<distance[neighcurIndex]){
-					algoSleep("if(tempDist<distance[");
-					distance[neighcurIndex] = tempDist;
-					algoSleep("distance[neighcurIndex] = ");
-					prev[neighcurIndex] = cur;
-					algoSleep("prev[neighcurIndex] =");
-					queue.enqueue(neighbours.getVertexName());
-				}
-				g.getEdges().get(i).setActivity("done");
-				if(!g.isDirected())
-					g.getEdges().get(j).setActivity("done");
-				bothSleep("queue.enqueue(neighbours.");//vertex evaluation done
 				neighbours = neighbours.getVNode();
-				algoSleep("neighbours = neighbours.getVNode();");
 			}
-			g.getVertices().get(g.indexRetriever(cur)).setActivity("done");
+			controller.getVertices().get(controller.indexRetriever(cur)).setActivity("done");
 			visualSleep();//vertex evaluation done
 			if(!all && cur.equals(destination) 
-				&& !(vertexSet[destIndex].getInDegree()>0))//stop when destination is done
+				&& !(vertexSet.get(destIndex).getInDegree()>0))//stop when destination is done
 				break;
 		}
 	}
 
 	private void generatePath(String[] tracks){
-		g.resetActivity();
+		controller.resetActivity();
 		int i = indexRetriever(end);
 		String track = tracks[i];
 		String[] path = track.split("-");
 
-		g.getVertices().get(g.indexRetriever(path[path.length-1])).setActivity("active");
+		controller.getVertices().get(controller.indexRetriever(path[path.length-1])).setActivity("active");
 
 		for(int j = path.length-2; j>=0; j--){
 			boolean foundAt1 = true;
 
 			if(j==0)
-				g.getVertices().get(g.indexRetriever(path[0])).setActivity("active");
+				controller.getVertices().get(controller.indexRetriever(path[0])).setActivity("active");
 			else
-				g.getVertices().get(g.indexRetriever(path[j])).setActivity("done"); //vertexc
+				controller.getVertices().get(controller.indexRetriever(path[j])).setActivity("done"); //vertexc
 
-			int idx = g.edgeIndex(path[j+1]+","+path[j]);
-			if(idx==-1 && g.getGraph().isDirected())
-				idx = g.edgeIndex(path[j]+","+path[j+1]);
+			int idx = controller.edgeIndex(path[j+1]+","+path[j]);
+			if(idx==-1)
+				idx = controller.edgeIndex(path[j]+","+path[j+1]);
 
-			g.getEdges().get(idx).setActivity("done"); //edge
-			if(!all && !g.getGraph().isDirected()){
-				if(g.getGraph().isDirected() && foundAt1)
-					g.getEdges().get(g.edgeIndex(path[j]+","+path[j+1])).setActivity("done"); 
-			}
+			controller.getEdges().get(idx).setActivity("done"); //edge
+			if(!all)
+				if(controller.isDirected() && foundAt1)
+					controller.getEdges().get(controller.edgeIndex(path[j]+","+path[j+1])).setActivity("done"); 
 		}
 	}
 
@@ -227,8 +212,8 @@ public class Dijkstra implements Runnable{
 
 	private String checkNegativeVertex(){
 		String out = "null";
-		for(int i = 0; i<vertexSet.length; i++){
-			VNode aux = vertexSet[i].getNeighbour();
+		for(int i = 0; i<vertexSet.size(); i++){
+			VNode aux = vertexSet.get(i).getNeighbour();
 
 			while(aux!=null){
 				if(aux.getWeight()<0)
@@ -247,15 +232,15 @@ public class Dijkstra implements Runnable{
 	}
 
 	private int indexRetriever(String name){
-		for(int i=0; i<vertexSet.length; i++){
-			if(name.equals(vertexSet[i].getVertexName()))
+		for(int i=0; i<vertexSet.size(); i++){
+			if(name.equals(vertexSet.get(i).getVertexName()))
 				return i;
 		}
 		return -1;
 	}
 
 	private String nameRetriever(int index){
-		return vertexSet[index].getVertexName();
+		return vertexSet.get(index).getVertexName();
 	}
 
 	private void visualSleep(){
@@ -278,10 +263,6 @@ public class Dijkstra implements Runnable{
 			vPanel.refreshAlgoScreen(pos, getDistances());
 			Thread.sleep(vPanel.getSleepTime());
 		}catch(InterruptedException ie){};
-	}
-
-	public boolean[] getVisited(){
-		return this.visited;
 	}
 
 	public double[] getDistances(){

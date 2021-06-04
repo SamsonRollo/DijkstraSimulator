@@ -123,6 +123,10 @@ public class Vertex{
 		return neighbours;
 	}
 
+	public int getRadius(){
+		return (int)(Math.sqrt(Math.pow(xPos,2)+Math.pow(yPos,2)));
+	}
+
 	public boolean addNeighbour(String neighbourName, double weight){ 
 		//check if neighbor is valid and already exists
 		if(neighbours==null){

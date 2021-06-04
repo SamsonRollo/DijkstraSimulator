@@ -5,24 +5,25 @@ import java.awt.*;
 import javax.swing.*;
 import java.awt.image.BufferedImage;
 import javax.imageio.ImageIO;
-import java.io.*;
+import java.io.IOException;
 import java.util.ArrayList;
-import Graph.*;
-import Exceptions.*;
+import Graph.DijkstraGraphController;
+import Graph.Vertex;
+import Graph.Edge;
 
 public class DrawPanel extends JPanel{
 
 	public int currentTool = 0;
-	private MainClass dPage;
+	private DijkstraGraphController controller;
 	private JPanel drawPanel;
 	private String selectedElement; //general purpose
 
-	public DrawPanel(MainClass dPage){
-		this.dPage = dPage;
+	public DrawPanel(DijkstraGraphController controller, Dimension size){
+		this.controller = controller;
 		setLayout(new BorderLayout());
-		add(loadTools(dPage.getSize()), BorderLayout.NORTH);
-		add(loadDrawingPanel(dPage.getSize()));
-		setSize((int)dPage.getSize().getWidth(), (int)dPage.getSize().getHeight());
+		add(loadTools(size), BorderLayout.NORTH);
+		add(loadDrawingPanel(size));
+		setSize((int)size.getWidth(), (int)size.getHeight());
 	}
 
 	private JPanel loadDrawingPanel(Dimension frameSize){
@@ -33,43 +34,35 @@ public class DrawPanel extends JPanel{
 				super.paintComponent(g);
 				g.setColor(Color.black);
 				int farthestX = 469, farthestY = 380;
-				for(Edge e: dPage.getGraph().getEdges()){
+				for(Edge e: controller.getEdges()){
 					//make an arrow if directed
 					if(e.getv1().equals(e.getv2())){
 						g.drawArc(e.getStartX()-10, e.getStartY()-25, 20,30, 0, 180);
-
-						if(dPage.getGraph().isWeighted())
-							g.drawString(String.valueOf((int)e.getWeight()), e.getStartX()-10, e.getStartY()-27);
+						g.drawString(String.valueOf((int)e.getWeight()), e.getStartX()-10, e.getStartY()-27);
 					}
 					else{
 						if(!isCarrying  || (isCarrying && e.getStartX()!=(int)initPoint.getX() && e.getStartY()!=(int)initPoint.getY())){
 							g.drawLine(e.getStartX(), e.getStartY(), e.getEndX(), e.getEndY());
-							if(dPage.getGraph().isDirected()){
+							if(controller.isDirected()){
 								g.fillPolygon(new int[] {(int)e.getArrow().get(0).getX(), (int)e.getArrow().get(1).getX(), (int)e.getArrow().get(2).getX()},
 												new int[] {(int)e.getArrow().get(0).getY(), (int)e.getArrow().get(1).getY(), (int)e.getArrow().get(2).getY()},3);
 							}
 						}
-						
-						if(dPage.getGraph().isWeighted())
-							g.drawString(String.valueOf((int)e.getWeight()), Math.abs((e.getStartX()+e.getEndX())/2), Math.abs((e.getStartY()+e.getEndY())/2));
+						g.drawString(String.valueOf((int)e.getWeight()), Math.abs((e.getStartX()+e.getEndX())/2), Math.abs((e.getStartY()+e.getEndY())/2));
 					}
 				}
 				//normal vertex
-				boolean usedIMG = true;
 				BufferedImage img = null;
 				try{
 					img = ImageIO.read(this.getClass().getClassLoader().getResource("src/vertex.png"));//source of nrmal vertex
-				}catch(IOException ioe){
-					usedIMG = false;
-					System.out.println("Unable to load some images");
-				};
+				}catch(IOException ioe){ System.out.println("Unable to load some images");};
 
-				for(Vertex v: dPage.getGraph().getVertices()){
+				for(Vertex v: controller.getVertices()){
 					if(v.getEndX()>farthestX)
 						farthestX = v.getEndX();
 					if(v.getEndY()>farthestY)
 						farthestY = v.getEndY();
-					if(usedIMG)
+					if(img!=null)
 						g.drawImage(img,v.getStartX()-15, v.getStartY()-15, null);
 					else{
 						g.setColor(Color.magenta);
@@ -106,15 +99,9 @@ public class DrawPanel extends JPanel{
 						if(eV!=null){
 							String weight = "";
 
-							if(dPage.getGraph().isWeighted())
-								weight = JOptionPane.showInputDialog("Enter weight or leave blank to automatically compute weight");
-							if(weight!=null){
-								try{
-									if(!weight.equals(""))
-										Double.parseDouble(weight);
-									addEdge(selectedElement, eV, weight);
-								}catch(NumberFormatException ne){new ErrorReport("Invalid Weight", "Add Error");};
-							}
+							weight = JOptionPane.showInputDialog("Enter weight or leave blank to automatically compute weight"); //put default input = 1.0
+							if(weight!=null)
+								addEdge(selectedElement, eV, weight);
 						}
 						selectedElement = null; //after adding edge, either success or fail, it ill reset initial vertex
 					}
@@ -151,7 +138,7 @@ public class DrawPanel extends JPanel{
 					else{
 						selectedElement = overEdge(e.getX(), e.getY());
 
-						if(!dPage.getGraph().isWeighted() || selectedElement==null)
+						if(selectedElement==null)
 							return;
 						
 						String weight = JOptionPane.showInputDialog("Enter new weight");
@@ -182,7 +169,7 @@ public class DrawPanel extends JPanel{
 			public void mouseMoved(MouseEvent e){
 				if(currentTool==4 && isCarrying){
 					currentPoint = new Point(e.getX(),e.getY());
-					dPage.getGraph().setArbitraryPosition(selectedElement, currentPoint);
+					controller.setArbitraryPosition(selectedElement, currentPoint);
 				}
 			}
 		});
@@ -198,7 +185,7 @@ public class DrawPanel extends JPanel{
 		return outerDrawPanel;
 	}
 
-	private JPanel loadTools(Dimension frameSize){ // change to null and find out why no show on north borderlayout
+	private JPanel loadTools(Dimension frameSize){
 		JPanel drawTools = new JPanel();
 		JButton move = new JButton();
 		JButton select = new JButton();
@@ -271,61 +258,48 @@ public class DrawPanel extends JPanel{
 	}
 
 	public void addVertex(int x, int y, String name, double time){
-		dPage.getGraph().addVertex(name, time, x, y);
-		refresh();
+		controller.addVertex(name, time, x, y);
 	}
 
 	public void addEdge(String v1, String v2, String weight){
-		dPage.getGraph().addEdge(v1, v2, weight);
-		refresh();
+		controller.addEdge(v1, v2, weight);
 	}
 
 	public void deleteVertex(String name){
-		dPage.getGraph().removeVertex(name);
-		refresh();
+		controller.removeVertex(name);
 	}
 
 	public void deleteEdge(String name){
-		dPage.getGraph().removeEdge(name);
-		refresh();
+		controller.removeEdge(name);
 	}
 
 	public void renameVertex(String oldName, String newName){
-		if(dPage.getGraph().renameVertex(oldName, newName))
-			refresh();
+		controller.renameVertex(oldName, newName);
 	}
 
 	public void changeWeight(String edge, String weight){
-		if(dPage.getGraph().changeWeight(edge, weight));
-			refresh();
+		controller.changeWeight(edge, weight);
 	}
 
-	public void moveVertex(String verteName){
-		int idx = dPage.getGraph().indexRetriever(verteName);
-		initPoint = dPage.getGraph().getVertices().get(idx).getPoint();
-		isCarrying = true;
+	public void moveVertex(String vertexName){
+		initPoint = controller.getVertexPoint(vertexName);
 	}
 
 	public void dropVertex(){
 		if(vertexIsNear((int)currentPoint.getX(),(int)currentPoint.getY()))
-			dPage.getGraph().setArbitraryPosition(selectedElement, initPoint);
+			controller.setArbitraryPosition(selectedElement, initPoint);
 		else
-			dPage.getGraph().setArbitraryPosition(selectedElement, currentPoint);
+			controller.setArbitraryPosition(selectedElement, currentPoint);
 		isCarrying = false;
 		//refresh();
 	}
 
 	private String overVertex(int x, int y){ //-15 for the offset
-		for(Vertex v: dPage.getGraph().getVertices()){
-			Rectangle checkV = new Rectangle(v.getStartX()-15,v.getStartY()-15,30,30);
-			if(checkV.contains(new Point(x,y)))
-				return v.getVertexName();
-		}
-		return null;
+		return controller.checkVertexOverlap(x,y);
 	}
 
 	private String overEdge(int x, int y){ //use square later for wide range
-		for(Edge e : dPage.getGraph().getEdges()){
+		for(Edge e : controller.getEdges()){
 			if(e.getv2().equals(e.getv1())){ //self loop edge
 				if(e.getRectangle().contains(x,y))
 					return e.getUniqueID();
@@ -341,19 +315,7 @@ public class DrawPanel extends JPanel{
 	}
 
 	private boolean vertexIsNear(int x, int y){
-		if(x-20<0 || y-30<0) //beyond top and left
-			return true;
-
-		Rectangle newV = new Rectangle(x-15,y-15,30,30);
-		for(Vertex v: dPage.getGraph().getVertices()){
-			if(isCarrying && v.getVertexName().equals(selectedElement))
-				continue;
-
-			Rectangle checkV = new Rectangle(v.getStartX()-15,v.getStartY()-15,30,30);
-			if(checkV.intersects(newV))
-				return true;
-		}
-		return false;
+		return controller.checkVertexIsNear(x,y,isCarrying,selectedElement,0);
 	}
 
 	public void refresh(){
@@ -361,8 +323,12 @@ public class DrawPanel extends JPanel{
 		drawPanel.repaint();
 	}
 
-	public JPanel getPanel(){
-		return this;
+	public void setCarrying(boolean isCarrying){
+		this.isCarrying = isCarrying;
+	}
+
+	public void updateController(DijkstraGraphController controller){
+		this.controller = controller;
 	}
 
 	private boolean isCarrying = false;

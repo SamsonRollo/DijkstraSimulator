@@ -1,19 +1,13 @@
-while(!queue.isEmpty()){
-    String cur = queue.dequeue();
-    int indexCur = indexRetriever(cur);
-    visited[indexCur] = true;
+Initialize all distance as infinite
 
-    VNode neighbours = vertexSet[indexCur].getNeighbour();
+Create an empty priority queue Q
+Insert source vertex S and its distamce equals zero
 
-    while(neighbours!=null){
-        double tempDist = distance[indexCur]+neighbours.getWeight();
-        int neighcurIndex = indexRetriever(neighbours.getVertexName());
-
-        if(tempDist<distance[neighcurIndex]){
-            distance[neighcurIndex] = tempDist;
-            prev[neighcurIndex] = cur;
-            queue.enqueue(neighbours.getVertexName());
-        }
-        neighbours = neighbours.getVNode();
-    }
-}
+While Q is not empty
+    Retrieve vertex u, the minimum distance vertex from Q
+ 
+    Visit every adjacent vertex v of u
+        If distance of v is less than the total distance of u plus distance between u and v
+            
+            Update distance of v equal total distance ofu plus distance beteen u and v
+            Add vertex v to Q
